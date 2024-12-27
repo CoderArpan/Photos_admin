@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photo Collection App</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="min-h-screen bg-gradient-to-br from-purple-600 to-blue-800 text-white">
+
+  <!-- Header -->
+  <header class="py-6 text-center">
+    <h1 class="text-5xl font-bold">📸 Cloudinary Photo App</h1>
+    <p class="mt-2 text-lg">Upload and view your photos with style!</p>
+  </header>
+
+  <!-- Admin Login Form (initially shown) -->
+  <section id="admin-login" class="p-6 bg-white text-gray-800 rounded-xl mx-auto w-11/12 md:w-2/3 lg:w-1/2 shadow-xl">
+    <h2 class="text-2xl font-bold mb-4">Admin Login</h2>
+    <button
+      id="login-btn"
+      class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded transition"
+    >
+      Login
+    </button>
+  </section>
+
+  <!-- Admin Dashboard (Initially hidden) -->
+  <section id="admin-dashboard" class="hidden p-6 bg-white text-gray-800 rounded-xl mx-auto w-11/12 md:w-2/3 lg:w-1/2 shadow-xl">
+    <h2 class="text-2xl font-bold mb-4">Admin Dashboard</h2>
+    <form id="upload-form" class="space-y-4">
+      <div>
+        <label for="photo" class="block font-medium mb-2">Upload a Photo</label>
+        <input
+          type="file"
+          id="photo"
+          name="photo"
+          accept="image/*"
+          class="w-full p-2 border rounded"
+        />
+      </div>
+      <button
+        type="submit"
+        class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded transition"
+      >
+        Upload
+      </button>
+    </form>
+    <div id="upload-result" class="mt-4 text-center text-green-600 hidden">
+      Photo uploaded successfully! 🎉
+    </div>
+  </section>
+
+  <!-- Photo Gallery -->
+  <main class="py-8">
+    <h2 class="text-center text-3xl font-bold mb-6">Photo Gallery</h2>
+    <div id="photo-gallery" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 px-4">
+      <!-- Photos will be dynamically added here -->
+    </div>
+  </main>
+
+  <script>
+    const API_URL = "https://photos-wqb3.onrender.com";
+
+    // Show the admin dashboard directly without password validation
+    document.getElementById("login-btn").addEventListener("click", () => {
+      document.getElementById("admin-login").classList.add("hidden");
+      document.getElementById("admin-dashboard").classList.remove("hidden");
+      fetchPhotos(); // Fetch photos after login
+    });
+
+    // Fetch photos from Cloudinary
+    const fetchPhotos = async () => {
+      const gallery = document.getElementById("photo-gallery");
+      gallery.innerHTML = ""; // Clear previous photos
+
+      try {
+        const cloudName = "dwotbb200"; // Replace with your Cloudinary cloud name
+        const response = await fetch(`https://res.cloudinary.com/${cloudName}/image/list/photos.json`);
+        const data = await response.json();
+
+        data.resources.forEach(photo => {
+          const photoDiv = document.createElement("div");
+          photoDiv.className = `
+            glow-card overflow-hidden rounded-xl bg-black border-4 border-pink-500 
+            transition-all duration-300 transform hover:rotate-2 hover:scale-105
+          `;
+          photoDiv.innerHTML = `
+            <img src="${photo.secure_url}" alt="${photo.public_id}" class="w-full h-64 object-cover rounded-t-xl">
+            <div class="p-4 text-center bg-gradient-to-br from-blue-900 to-pink-500">
+              <h2 class="text-xl font-bold text-yellow-300">${photo.public_id}</h2>
+            </div>
+          `;
+          gallery.appendChild(photoDiv);
+        });
+      } catch (error) {
+        console.error("Error fetching photos:", error);
+      }
+    };
+
+    // Handle photo upload
+    document.getElementById("upload-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData();
+      const photoInput = document.getElementById("photo");
+
+      if (photoInput.files.length === 0) {
+        alert("Please select a photo to upload!");
+        return;
+      }
+
+      formData.append("photo", photoInput.files[0]);
+
+      try {
+        const response = await fetch(`${API_URL}/upload`, {
+          method: "POST",
+          body: formData,
+        });
+
+        if (response.ok) {
+          document.getElementById("upload-result").classList.remove("hidden");
+          fetchPhotos(); // Refresh gallery
+        } else {
+          alert("Failed to upload photo");
+        }
+      } catch (error) {
+        console.error("Error uploading photo:", error);
+      }
+    });
+
+    // If the admin is already logged in (saved in localStorage), show the dashboard
+    if (localStorage.getItem("isAdmin") === "true") {
+      document.getElementById("admin-login").classList.add("hidden");
+      document.getElementById("admin-dashboard").classList.remove("hidden");
+      fetchPhotos(); // Fetch photos on page load
+    }
+  </script>
+</body>
+</html>
